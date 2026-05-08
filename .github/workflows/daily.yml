@@ -1,0 +1,25 @@
+name: Send Daily Stock Email
+
+on:
+  schedule:
+    - cron: '0 21 * * *'  # 北京时间早上5点（UTC 21点）
+  workflow_dispatch:
+
+jobs:
+  run-script:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+
+      - name: Install dependencies
+        run: pip install requests
+
+      - name: Run script
+        run: python main.py
