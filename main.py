@@ -3,32 +3,33 @@ import requests
 import smtplib
 from email.mime.text import MIMEText
 from datetime import datetime
+
+# ====== 邮箱配置 ======
 SMTP_SERVER = "smtp.qq.com"
 SMTP_PORT = 465
-EMAIL = os.environ["EMAIL"]
-PASSWORD = os.environ["PASSWORD"]
-API_KEY = os.environ["API_KEY"]
-# ====== 获取涨幅榜 ======
-import requests
+EMAIL = os.environ.get("EMAIL")
+PASSWORD = os.environ.get("PASSWORD")  # QQ 邮箱 SMTP 授权码
 
+if not EMAIL or not PASSWORD:
+    raise Exception("❌ EMAIL 或 PASSWORD 环境变量未设置，请检查 GitHub Secrets")
+
+# ====== 获取涨幅榜（Yahoo Finance） ======
 def get_top_gainers():
     url = "https://query1.finance.yahoo.com/v1/finance/screener/predefined/saved?formatted=true&scrIds=day_gainers&count=5"
-
     headers = {"User-Agent": "Mozilla/5.0"}
 
     try:
         resp = requests.get(url, headers=headers, timeout=10)
+        resp.raise_for_status()
         data = resp.json()
-
         quotes = data["finance"]["result"][0]["quotes"]
         return quotes[:5]
-
     except Exception as e:
-        print("获取失败:", e)
+        print("❌ 获取股票数据失败:", e)
         return []
 
 # ====== 简单概念判断 ======
-concept = get_concept(s.get('shortName', s['symbol']))
+def get_concept(name):
     name = name.lower()
     if "bio" in name or "thera" in name:
         return "生物医药 / 创新药"
@@ -47,12 +48,14 @@ def build_email():
     content = f"【{today} 美股涨幅榜 TOP5】\n\n"
 
     if not stocks:
-        content += "⚠️ 未能获取股票数据，请检查 API KEY 或网络。\n"
+        content += "⚠️ 未能获取股票数据，请检查网络或 API。\n"
     else:
         for i, s in enumerate(stocks, 1):
-            concept = get_concept(s['name'])
-            content += f"{i}) {s['symbol']} - {s['name']}\n"
-            content += f"涨幅：{s['changesPercentage']}\n"
+            name = s.get("shortName", s["symbol"])
+            concept = get_concept(name)
+            change = s.get("regularMarketChangePercent", 0)
+            content += f"{i}) {s['symbol']} - {name}\n"
+            content += f"涨幅：{change:.2f}%\n"
             content += f"核心概念：{concept}\n\n"
 
     content += "【提示】小盘股波动极大，请注意风险。\n"
@@ -67,13 +70,15 @@ def send_email():
     msg["To"] = EMAIL
 
     try:
+        print("📧 正在发送邮件...")
         server = smtplib.SMTP_SSL(SMTP_SERVER, SMTP_PORT)
         server.login(EMAIL, PASSWORD)
         server.sendmail(EMAIL, [EMAIL], msg.as_string())
         server.quit()
-        print("邮件发送成功")
+        print("✅ 邮件发送成功")
     except Exception as e:
-        print("邮件发送失败:", e)
+        print("❌ 邮件发送失败:", e)
 
+# ====== 主程序 ======
 if __name__ == "__main__":
     send_email()
