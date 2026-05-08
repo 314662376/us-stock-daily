@@ -9,28 +9,23 @@ EMAIL = os.environ["EMAIL"]
 PASSWORD = os.environ["PASSWORD"]
 API_KEY = os.environ["API_KEY"]
 # ====== 获取涨幅榜 ======
+import requests
+
 def get_top_gainers():
-    API_KEY = os.environ["API_KEY"]
-    url = f"https://financialmodelingprep.com/api/v3/stock_market/gainers?apikey={API_KEY}"
-    
+    url = "https://query1.finance.yahoo.com/v1/finance/screener/predefined/saved?formatted=true&scrIds=day_gainers&count=5"
+
+    headers = {"User-Agent": "Mozilla/5.0"}
+
     try:
-        resp = requests.get(url, timeout=10)
-        print("HTTP status:", resp.status_code)
-        print("Raw response:", resp.text[:200])
-        resp.raise_for_status()
+        resp = requests.get(url, headers=headers, timeout=10)
         data = resp.json()
+
+        quotes = data["finance"]["result"][0]["quotes"]
+        return quotes[:5]
+
     except Exception as e:
-        print("请求股票数据失败:", e)
+        print("获取失败:", e)
         return []
-
-    if isinstance(data, dict) and "Error Message" in data:
-        print("API 返回错误:", data["Error Message"])
-        return []
-
-    if not isinstance(data, list):
-        return []
-
-    return data[:5]
 
 # ====== 简单概念判断 ======
 def get_concept(name):
