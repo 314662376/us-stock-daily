@@ -4,11 +4,9 @@ import smtplib
 from email.mime.text import MIMEText
 from datetime import datetime
 
-# ====== 邮箱配置 ======
-SMTP_SERVER = "smtp.qq.com"
-SMTP_PORT = 465
-  EMAIL: ${{ secrets.EMAIL }}
-  PASSWORD: ${{ secrets.EMAIL_PASSWORD }}
+EMAIL = os.environ["EMAIL"]
+PASSWORD = os.environ["PASSWORD"]
+API_KEY = os.environ["API_KEY"]
 # ====== 获取涨幅榜 ======
 def get_top_gainers():
     API_KEY = os.environ["API_KEY"]
