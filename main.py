@@ -12,7 +12,25 @@ PASSWORD = "onxajmqsxwcabgdi"
 # ====== 获取涨幅榜 ======
 def get_top_gainers():
     url = "https://financialmodelingprep.com/api/v3/stock_market/gainers"
-    data = requests.get(url).json()
+    resp = requests.get(url)
+
+    try:
+        data = resp.json()
+    except:
+        return []
+
+    # ⚠️ 兼容异常返回
+    if isinstance(data, dict):
+        for k in ["mostGainers", "gainers", "data"]:
+            if k in data and isinstance(data[k], list):
+                data = data[k]
+                break
+        else:
+            return []
+
+    if not isinstance(data, list):
+        return []
+
     return data[:5]
 
 # ====== 简单概念判断 ======
