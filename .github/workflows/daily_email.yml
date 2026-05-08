@@ -12,9 +12,9 @@ jobs:
       # 强制使用 Node.js 24，兼容 GitHub Actions 新要求
       FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
       # Python 脚本需要的邮箱信息和 API KEY
-      EMAIL: ${314662376@qq.com}
-      PASSWORD: ${onxajmqsxwcabgdi}
-      API_KEY: ${cUgV2hlvx1sB2qZaohAuR0wOx34Evt4y}
+      EMAIL: ${{ secrets.EMAIL }}
+      PASSWORD: ${{ secrets.EMAIL_PASSWORD }}
+      API_KEY: ${{ secrets.API_KEY }}
     steps:
       # 1️⃣ 拉取仓库代码
       - uses: actions/checkout@v3
