@@ -1,88 +1,114 @@
 import os
 import requests
-import smtplib
-from email.mime.text import MIMEText
 from datetime import datetime
+from email.mime.text import MIMEText
+import smtplib
+import yfinance as yf
+from collections import Counter
 
 # ====== 邮箱配置 ======
 SMTP_SERVER = "smtp.qq.com"
 SMTP_PORT = 465
+
 EMAIL = os.environ.get("EMAIL")
-PASSWORD = os.environ.get("PASSWORD")  # QQ 邮箱 SMTP 授权码
+PASSWORD = os.environ.get("PASSWORD")  # QQ邮箱SMTP授权码
 
 if not EMAIL or not PASSWORD:
-    raise Exception("❌ EMAIL 或 PASSWORD 环境变量未设置，请检查 GitHub Secrets")
+    raise Exception("❌ EMAIL 或 PASSWORD 未配置，请检查 GitHub Secrets")
 
-# ====== 获取涨幅榜（Yahoo Finance） ======
+# ====== 获取涨幅榜 TOP50 ======
 def get_top_gainers():
-    url = "https://query1.finance.yahoo.com/v1/finance/screener/predefined/saved?formatted=true&scrIds=day_gainers&count=5"
+    url = "https://query1.finance.yahoo.com/v1/finance/screener/predefined/saved"
+    params = {
+        "scrIds": "day_gainers",
+        "count": 50,
+        "formatted": "true"
+    }
     headers = {"User-Agent": "Mozilla/5.0"}
 
+    resp = requests.get(url, params=params, headers=headers, timeout=10)
+    data = resp.json()
+
+    return data["finance"]["result"][0]["quotes"]
+
+# ====== 板块识别 ======
+def get_sector(symbol):
     try:
-        resp = requests.get(url, headers=headers, timeout=10)
-        resp.raise_for_status()
-        data = resp.json()
-        quotes = data["finance"]["result"][0]["quotes"]
-        return quotes[:5]
-    except Exception as e:
-        print("❌ 获取股票数据失败:", e)
-        return []
+        stock = yf.Ticker(symbol)
+        info = stock.info
 
-# ====== 简单概念判断 ======
-def get_concept(name):
-    name = name.lower()
-    if "bio" in name or "thera" in name:
-        return "生物医药 / 创新药"
-    if "ai" in name or "tech" in name:
-        return "AI / 科技"
-    if "energy" in name:
-        return "能源"
-    if "space" in name or "rocket" in name:
-        return "商业航天"
-    return "小盘题材 / 资金驱动"
+        industry = str(info.get("industry", "")).lower()
+        summary = str(info.get("longBusinessSummary", "")).lower()
 
-# ====== 生成邮件内容 ======
+        text = industry + " " + summary
+
+        if any(x in text for x in ["lithium", "battery", "energy", "solar", "wind", "renewable"]):
+            return "能源 / 锂电 / 新能源"
+
+        if any(x in text for x in ["ai", "artificial intelligence", "semiconductor", "chip", "software"]):
+            return "AI / 半导体 / 科技"
+
+        if any(x in text for x in ["biotech", "pharma", "drug"]):
+            return "生物医药"
+
+        if any(x in text for x in ["cloud", "saas", "platform"]):
+            return "云计算"
+
+        if any(x in text for x in ["space", "rocket", "aerospace"]):
+            return "商业航天"
+
+        return "其他 / 小盘题材"
+
+    except:
+        return "其他 / 小盘题材"
+
+# ====== 统计最强板块 ======
+def get_top_sectors(stocks):
+    counter = Counter()
+
+    for s in stocks:
+        symbol = s["symbol"]
+        sector = get_sector(symbol)
+        counter[sector] += 1
+
+    return counter.most_common(5)
+
+# ====== 生成邮件 ======
 def build_email():
     stocks = get_top_gainers()
+
     today = datetime.now().strftime("%Y-%m-%d")
-    content = f"【{today} 美股涨幅榜 TOP5】\n\n"
+    content = f"【{today} 美股市场日报】\n\n"
 
-    CONCEPT_MAPPING = {
-        "生物医药 / 创新药": ["恒瑞医药", "信达生物", "百济神州"],
-        "AI / 科技": ["科大讯飞", "中科曙光", "寒武纪"],
-        "能源": ["中国石油", "中国石化", "阳光电源"],
-        "商业航天": ["航天动力", "航天电子"],
-        "小盘题材 / 资金驱动": ["宁德时代", "东方财富"]
-    }
+    # ===== 个股 TOP5 =====
+    content += "📈 美股涨幅 TOP5：\n\n"
 
-    for i, s in enumerate(stocks, 1):
+    for i, s in enumerate(stocks[:5], 1):
         name = s.get("shortName", s["symbol"])
-        concept = get_concept(name)
+        change = s.get("regularMarketChangePercent", 0)
 
-        # 涨幅
-        change_data = s.get("regularMarketChangePercent", 0)
-        if isinstance(change_data, dict):
-            change = change_data.get("raw", 0)
-        else:
-            change = change_data
-
-        # 推荐国内核心股
-        recommend = CONCEPT_MAPPING.get(concept, [])
-        rec_str = " / ".join(recommend) if recommend else "无"
+        if isinstance(change, dict):
+            change = change.get("raw", 0)
 
         content += f"{i}) {s['symbol']} - {name}\n"
-        content += f"涨幅：{change:.2f}%\n"
-        content += f"核心概念：{concept}\n"
-        content += f"推荐国内核心股：{rec_str}\n\n"
+        content += f"涨幅：{change:.2f}%\n\n"
 
-    content += "【提示】小盘股波动极大，请注意风险。\n"
+    # ===== 板块 TOP5 =====
+    content += "🧠 今日强势板块 TOP5：\n\n"
+
+    sectors = get_top_sectors(stocks)
+
+    for i, (sec, count) in enumerate(sectors, 1):
+        content += f"{i}) {sec}（{count} 只入选）\n"
+
+    content += "\n⚠️ 仅供参考，不构成投资建议"
+
     return content
 
 # ====== 发送邮件 ======
 def send_email():
-    content = build_email()
-    msg = MIMEText(content, "plain", "utf-8")
-    msg["Subject"] = "美股涨幅榜日报"
+    msg = MIMEText(build_email(), "plain", "utf-8")
+    msg["Subject"] = "美股涨幅榜 & 板块日报"
     msg["From"] = EMAIL
     msg["To"] = EMAIL
 
