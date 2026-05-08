@@ -1,17 +1,16 @@
 name: Daily US Stock Email
 
-# 每天北京时间 5 点触发（UTC 21:00）
+# 定时执行，每天北京时间 5 点（UTC 21:00）
 on:
   schedule:
     - cron: '0 21 * * *'
+  workflow_dispatch:  # 添加这个，确保有“Run workflow”按钮
 
 jobs:
   send_email:
     runs-on: ubuntu-latest
     env:
-      # 强制使用 Node.js 24，兼容 GitHub Actions 新要求
-      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
-      # Python 脚本需要的邮箱信息和 API KEY
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true  # 解决 Node.js 20 弃用问题
       EMAIL: ${{ secrets.EMAIL }}
       PASSWORD: ${{ secrets.EMAIL_PASSWORD }}
       API_KEY: ${{ secrets.API_KEY }}
