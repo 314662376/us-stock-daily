@@ -6,13 +6,15 @@ from datetime import datetime
 # ====== 邮箱配置 ======
 SMTP_SERVER = "smtp.qq.com"
 SMTP_PORT = 465
-EMAIL = "314662376@qq.com"
-PASSWORD = "onxajmqsxwcabgdi"
+
+# 读取 GitHub Actions Secrets
+EMAIL = os.environ["EMAIL"]
+PASSWORD = os.environ["PASSWORD"]
+API_KEY = os.environ["API_KEY"]
 
 # ====== 获取涨幅榜 ======
 def get_top_gainers():
-API_KEY = "cUgV2hlvx1sB2qZaohAuR0wOx34Evt4y"
-
+# 加上 API key 的 URL
 url = f"https://financialmodelingprep.com/api/v3/stock_market/gainers?apikey={API_KEY}"
 resp = requests.get(url)
     try:
