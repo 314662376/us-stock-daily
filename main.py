@@ -11,13 +11,17 @@ PASSWORD = "onxajmqsxwcabgdi"
 
 # ====== 获取涨幅榜 ======
 def get_top_gainers():
-    url = "https://financialmodelingprep.com/api/v3/stock_market/gainers"
-    resp = requests.get(url)
+API_KEY = "cUgV2hlvx1sB2qZaohAuR0wOx34Evt4y"
 
+url = f"https://financialmodelingprep.com/api/v3/stock_market/gainers?apikey={API_KEY}"
+resp = requests.get(url)
     try:
         data = resp.json()
     except:
         return []
+        resp = requests.get(url)
+print(resp.status_code)
+print(resp.text[:200])
 
     # ⚠️ 兼容异常返回
     if isinstance(data, dict):
