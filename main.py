@@ -47,22 +47,33 @@ def build_email():
     today = datetime.now().strftime("%Y-%m-%d")
     content = f"【{today} 美股涨幅榜 TOP5】\n\n"
 
-    if not stocks:
-        content += "⚠️ 未能获取股票数据，请检查网络或 API。\n"
-    else:
-        for i, s in enumerate(stocks, 1):
-            name = s.get("shortName", s["symbol"])
-            concept = get_concept(name)
+    CONCEPT_MAPPING = {
+        "生物医药 / 创新药": ["恒瑞医药", "信达生物", "百济神州"],
+        "AI / 科技": ["科大讯飞", "中科曙光", "寒武纪"],
+        "能源": ["中国石油", "中国石化", "阳光电源"],
+        "商业航天": ["航天动力", "航天电子"],
+        "小盘题材 / 资金驱动": ["宁德时代", "东方财富"]
+    }
 
-            change_data = s.get("regularMarketChangePercent", 0)
-            if isinstance(change_data, dict):
-                change = change_data.get("raw", 0)
-            else:
-                change = change_data
+    for i, s in enumerate(stocks, 1):
+        name = s.get("shortName", s["symbol"])
+        concept = get_concept(name)
 
-            content += f"{i}) {s['symbol']} - {name}\n"
-            content += f"涨幅：{change:.2f}%\n"
-            content += f"核心概念：{concept}\n\n"
+        # 涨幅
+        change_data = s.get("regularMarketChangePercent", 0)
+        if isinstance(change_data, dict):
+            change = change_data.get("raw", 0)
+        else:
+            change = change_data
+
+        # 推荐国内核心股
+        recommend = CONCEPT_MAPPING.get(concept, [])
+        rec_str = " / ".join(recommend) if recommend else "无"
+
+        content += f"{i}) {s['symbol']} - {name}\n"
+        content += f"涨幅：{change:.2f}%\n"
+        content += f"核心概念：{concept}\n"
+        content += f"推荐国内核心股：{rec_str}\n\n"
 
     content += "【提示】小盘股波动极大，请注意风险。\n"
     return content
