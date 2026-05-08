@@ -53,7 +53,13 @@ def build_email():
         for i, s in enumerate(stocks, 1):
             name = s.get("shortName", s["symbol"])
             concept = get_concept(name)
-            change = s.get("regularMarketChangePercent", 0)
+
+            change_data = s.get("regularMarketChangePercent", 0)
+            if isinstance(change_data, dict):
+                change = change_data.get("raw", 0)
+            else:
+                change = change_data
+
             content += f"{i}) {s['symbol']} - {name}\n"
             content += f"涨幅：{change:.2f}%\n"
             content += f"核心概念：{concept}\n\n"
