@@ -1,25 +1,32 @@
-name: Send Daily Stock Email
+name: Daily US Stock Email
 
+# 每天北京时间 5 点触发（UTC 21:00）
 on:
   schedule:
-    - cron: '0 21 * * *'  # 北京时间早上5点（UTC 21点）
-  workflow_dispatch:
+    - cron: '0 21 * * *'
 
 jobs:
-  run-script:
+  send_email:
     runs-on: ubuntu-latest
-
+    env:
+      # 强制使用 Node.js 24，兼容 GitHub Actions 新要求
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+      # Python 脚本需要的邮箱信息和 API KEY
+      EMAIL: ${{ secrets.EMAIL }}
+      PASSWORD: ${{ secrets.EMAIL_PASSWORD }}
+      API_KEY: ${{ secrets.API_KEY }}
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
+      # 1️⃣ 拉取仓库代码
+      - uses: actions/checkout@v3
 
-      - name: Setup Python
-        uses: actions/setup-python@v4
+      # 2️⃣ 设置 Python 环境
+      - uses: actions/setup-python@v4
         with:
-          python-version: '3.10'
+          python-version: "3.11"
 
-      - name: Install dependencies
-        run: pip install requests
+      # 3️⃣ 安装依赖
+      - run: pip install --upgrade pip
+      - run: pip install requests
 
-      - name: Run script
-        run: python main.py
+      # 4️⃣ 执行 Python 脚本
+      - run: python your_script.py
