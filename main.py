@@ -3,7 +3,8 @@ import requests
 import smtplib
 from email.mime.text import MIMEText
 from datetime import datetime
-
+SMTP_SERVER = "smtp.qq.com"
+SMTP_PORT = 465
 EMAIL = os.environ["EMAIL"]
 PASSWORD = os.environ["PASSWORD"]
 API_KEY = os.environ["API_KEY"]
