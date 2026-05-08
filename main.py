@@ -7,9 +7,8 @@ from datetime import datetime
 # ====== 邮箱配置 ======
 SMTP_SERVER = "smtp.qq.com"
 SMTP_PORT = 465
-EMAIL = os.environ["EMAIL"]
-PASSWORD = os.environ["EMAIL_PASSWORD"]
-
+  EMAIL: ${{ secrets.EMAIL }}
+  PASSWORD: ${{ secrets.EMAIL_PASSWORD }}
 # ====== 获取涨幅榜 ======
 def get_top_gainers():
     API_KEY = os.environ["API_KEY"]
