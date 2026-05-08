@@ -28,7 +28,7 @@ def get_top_gainers():
         return []
 
 # ====== 简单概念判断 ======
-def get_concept(name):
+concept = get_concept(s.get('shortName', s['symbol']))
     name = name.lower()
     if "bio" in name or "thera" in name:
         return "生物医药 / 创新药"
