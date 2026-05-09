@@ -15,14 +15,116 @@ PASSWORD = os.environ.get("PASSWORD")  # QQ邮箱SMTP授权码
 if not EMAIL or not PASSWORD:
     raise Exception("❌ EMAIL 或 PASSWORD 未配置，请检查 GitHub Secrets")
 
+# ====== 中文名字典（市值TOP100美股常见）=====
+cn_dict = {
+    "AAPL": "苹果",
+    "MSFT": "微软",
+    "GOOGL": "谷歌",
+    "AMZN": "亚马逊",
+    "TSLA": "特斯拉",
+    "NVDA": "英伟达",
+    "BRK-B": "伯克希尔·哈撒韦",
+    "META": "Meta",
+    "UNH": "联合健康",
+    "JNJ": "强生",
+    "V": "Visa",
+    "WMT": "沃尔玛",
+    "PG": "宝洁",
+    "JPM": "摩根大通",
+    "MA": "万事达",
+    "HD": "家得宝",
+    "PYPL": "PayPal",
+    "DIS": "迪士尼",
+    "ADBE": "Adobe",
+    "NFLX": "奈飞",
+    "KO": "可口可乐",
+    "PEP": "百事可乐",
+    "XOM": "埃克森美孚",
+    "CVX": "雪佛龙",
+    "MRK": "默克",
+    "ABBV": "艾伯维",
+    "PFE": "辉瑞",
+    "ABT": "雅培",
+    "TMO": "赛默飞世尔",
+    "ORCL": "甲骨文",
+    "INTC": "英特尔",
+    "CSCO": "思科",
+    "CRM": "Salesforce",
+    "ACN": "埃森哲",
+    "NKE": "耐克",
+    "MCD": "麦当劳",
+    "LLY": "礼来",
+    "AVGO": "博通",
+    "COST": "好市多",
+    "TXN": "德州仪器",
+    "QCOM": "高通",
+    "MDT": "美敦力",
+    "NEE": "下一能源",
+    "LIN": "林德",
+    "HON": "霍尼韦尔",
+    "LOW": "劳氏",
+    "PM": "菲利普莫里斯",
+    "SBUX": "星巴克",
+    "BMY": "百时美施贵宝",
+    "UNP": "联合太平洋铁路",
+    "AMGN": "安进",
+    "RTX": "雷神",
+    "GILD": "吉利德",
+    "IBM": "IBM",
+    "BA": "波音",
+    "CAT": "卡特彼勒",
+    "DE": "约翰迪尔",
+    "MMM": "3M",
+    "GS": "高盛",
+    "AXP": "美国运通",
+    "BLK": "贝莱德",
+    "BKNG": "Booking",
+    "CVS": "CVS",
+    "MDLZ": "亿滋国际",
+    "SYK": "史赛克",
+    "ANTM": "安泰保险",
+    "ISRG": "Intuitive Surgical",
+    "FISV": "Fiserv",
+    "ADI": "亚德诺",
+    "MU": "美光",
+    "SPGI": "标普全球",
+    "LRCX": "拉姆研究",
+    "NOW": "ServiceNow",
+    "CHTR": "Charter",
+    "APD": "空气化工产品",
+    "CSX": "CSX铁路",
+    "CCI": "城市中心",
+    "EL": "欧莱雅",
+    "MDLZ": "亿滋",
+    "TMUS": "T-Mobile",
+    "ZTS": "智飞生物",
+    "VRTX": "Vertex",
+    "EA": "艺电",
+    "ADP": "ADP",
+    "ROST": "Ross Stores",
+    "T": "AT&T",
+    "VZ": "Verizon",
+    "PLD": "Prologis",
+    "ISRG": "直觉手术",
+    "ABMD": "ABIOMED",
+    "REGN": "再生元",
+    "BIIB": "Biogen",
+    "LMT": "洛克希德马丁",
+    "HON": "霍尼韦尔",
+    "UPS": "联合包裹",
+    "FDX": "联邦快递",
+    "SYK": "史赛克",
+    "BK": "富国银行",
+    "MS": "摩根士丹利",
+    "CL": "宝洁（消费品）",
+    "SHW": "舒尔茨油漆",
+    "CCI": "城市中心投资",
+}
+
 # ====== 获取涨幅榜 TOP50 ======
 def get_top_gainers():
     url = "https://query1.finance.yahoo.com/v1/finance/screener/predefined/saved"
-    params = {
-        "scrIds": "day_gainers",
-        "count": 50,
-        "formatted": "true"
-    }
+    params = {"scrIds": "day_gainers", "count": 50, "formatted": "true"}
     headers = {"User-Agent": "Mozilla/5.0"}
 
     resp = requests.get(url, params=params, headers=headers, timeout=10)
@@ -53,7 +155,7 @@ def get_top_sectors(stocks):
         symbol = s['symbol']
         try:
             info = batch.tickers[symbol].info
-            text = (str(info.get("industry","")) + " " + str(info.get("longBusinessSummary",""))).lower()
+            text = (str(info.get("industry", "")) + " " + str(info.get("longBusinessSummary", ""))).lower()
             sector = get_sector(text)
         except:
             sector = "其他 / 小盘题材"
@@ -77,7 +179,7 @@ def filter_large_cap(stocks, min_market_cap=100_000_000_000):
                 large_caps.append({
                     "symbol": symbol,
                     "name": s.get("shortName", symbol),
-                    "cn_name": "",  # 简单版中文名为空
+                    "cn_name": cn_dict.get(symbol, ""),
                     "change": change,
                     "marketCap": market_cap
                 })
@@ -96,7 +198,7 @@ def build_email():
     for i, s in enumerate(stocks[:5], 1):
         symbol = s['symbol']
         name = s.get("shortName", symbol)
-        cn_name = ""  # 简单版为空
+        cn_name = cn_dict.get(symbol, "")
         change = s.get("regularMarketChangePercent", 0)
         if isinstance(change, dict):
             change = change.get("raw", 0)
@@ -107,8 +209,7 @@ def build_email():
     large_caps = filter_large_cap(stocks)
     if large_caps:
         for i, s in enumerate(large_caps, 1):
-            symbol = s['symbol']
-            content += f"{i}) {symbol} - {s['name']} - {s['cn_name']}\n"
+            content += f"{i}) {s['symbol']} - {s['name']} - {s['cn_name']}\n"
             content += f"涨幅：{s['change']:.2f}% | 市值：{s['marketCap']/1e9:.1f}B USD\n\n"
     else:
         content += "暂无符合条件的股票。\n\n"
