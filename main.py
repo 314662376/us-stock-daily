@@ -60,7 +60,7 @@ def get_top_sectors(stocks):
         counter[sector] += 1
     return counter.most_common(5)
 
-# ====== 筛选市值大于 1000 亿 USD 的个股（批量获取） ======
+# ====== 筛选市值大于 1000 亿 USD 的个股 ======
 def filter_large_cap(stocks, min_market_cap=100_000_000_000):
     symbols = [s['symbol'] for s in stocks]
     batch = yf.Tickers(" ".join(symbols))
@@ -77,6 +77,7 @@ def filter_large_cap(stocks, min_market_cap=100_000_000_000):
                 large_caps.append({
                     "symbol": symbol,
                     "name": s.get("shortName", symbol),
+                    "cn_name": "",  # 简单版中文名为空
                     "change": change,
                     "marketCap": market_cap
                 })
@@ -93,18 +94,22 @@ def build_email():
     # 个股 TOP5
     content += "📈 美股涨幅 TOP5（不限制市值）：\n\n"
     for i, s in enumerate(stocks[:5], 1):
-        name = s.get("shortName", s["symbol"])
+        symbol = s['symbol']
+        name = s.get("shortName", symbol)
+        cn_name = ""  # 简单版为空
         change = s.get("regularMarketChangePercent", 0)
         if isinstance(change, dict):
             change = change.get("raw", 0)
-        content += f"{i}) {s['symbol']} - {name}\n涨幅：{change:.2f}%\n\n"
+        content += f"{i}) {symbol} - {name} - {cn_name}\n涨幅：{change:.2f}%\n\n"
 
-    # 市值大于1000亿
+    # 市值大于1000亿 USD
     content += "🏦 市值 ≥1000 亿 USD，涨幅 TOP10：\n\n"
     large_caps = filter_large_cap(stocks)
     if large_caps:
         for i, s in enumerate(large_caps, 1):
-            content += f"{i}) {s['symbol']} - {s['name']}\n涨幅：{s['change']:.2f}% | 市值：{s['marketCap']/1e9:.1f}B USD\n\n"
+            symbol = s['symbol']
+            content += f"{i}) {symbol} - {s['name']} - {s['cn_name']}\n"
+            content += f"涨幅：{s['change']:.2f}% | 市值：{s['marketCap']/1e9:.1f}B USD\n\n"
     else:
         content += "暂无符合条件的股票。\n\n"
 
@@ -133,5 +138,6 @@ def send_email():
     except Exception as e:
         print("❌ 邮件发送失败:", e)
 
+# ====== 主程序 ======
 if __name__ == "__main__":
     send_email()
