@@ -3,7 +3,7 @@ name: Daily US Stock Email
 on:
   workflow_dispatch:   # 支持手动触发
   schedule:
-    - cron: '0 5 * * *'  # 每天 5 点运行（北京时间）
+    - cron: '7 21 * * *'
 
 jobs:
   send_email:
